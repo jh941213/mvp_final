@@ -1,0 +1,145 @@
+### 이 구성 파일에는 설정해야 하는 필수 핵심 기본값과 몇 가지 일반적인 선택적 설정이 포함되어 있습니다.
+### 사용 가능한 설정의 전체 목록은 https://microsoft.github.io/graphrag/config/yaml/ 를 참조하세요.
+
+### LLM 설정 ###
+## LLM 호출의 스레딩 및 토큰 제한을 조정하는 여러 설정이 있습니다 - 문서를 확인하세요.
+
+models:
+  default_chat_model:
+    type: openai_chat # OpenAI 호환 API 사용
+    auth_type: api_key
+    api_base: https://api.friendli.ai/serverless/v1
+    api_key: ${GRAPHRAG_API_KEY_CHAT} # .env 파일에서 Friendli AI 키 설정
+    model: K-intelligence/Midm-2.0-Base-Instruct
+    encoding_model: cl100k_base # 사용자 정의 모델용 토크나이저 명시적 설정
+    model_supports_json: true # 모델에서 사용 가능한 경우 권장됨
+    concurrent_requests: 25 # 허용되는 동시 LLM 요청의 최대 수
+    async_mode: threaded # 또는 asyncio
+    retry_strategy: native
+    max_retries: 10
+    tokens_per_minute: null             # 분당 토큰 수 (균형 잡힌 설정)
+    requests_per_minute: null             # 분당 요청 수 (안정적인 설정)
+  default_embedding_model:
+    type: openai_embedding # OpenAI 임베딩 모델 사용
+    auth_type: api_key
+    api_base: https://api.openai.com/v1
+    api_key: ${GRAPHRAG_API_KEY_EMBEDDING} # .env 파일에서 OpenAI 키 설정
+    model: text-embedding-3-large
+    # encoding_model: cl100k_base # 정의되지 않은 경우 tiktoken에 의해 자동으로 설정됨
+    model_supports_json: true # 모델에서 사용 가능한 경우 권장됨
+    concurrent_requests: 25 # 허용되는 동시 LLM 요청의 최대 수
+    async_mode: threaded # 또는 asyncio
+    retry_strategy: native
+    max_retries: 10
+    tokens_per_minute: null             # 임베딩 모델용 토큰 수
+    requests_per_minute: null             # 임베딩 모델용 요청 수
+
+### 입력 설정 ###
+
+input:
+  type: file # 또는 blob
+  file_type: text # [csv, text, json]
+  base_dir: "input"
+  file_pattern: ".*\\.md"
+
+chunks:
+  size: 1200
+  overlap: 100
+  group_by_columns: [id]
+
+### 출력/저장소 설정 ###
+## 다음 4개 섹션에서 Blob 저장소가 지정된 경우,
+## connection_string과 container_name을 제공해야 합니다
+
+output:
+  type: file # [file, blob, cosmosdb]
+  base_dir: "output"
+    
+cache:
+  type: file # [file, blob, cosmosdb]
+  base_dir: "cache"
+
+reporting:
+  type: file # [file, blob, cosmosdb]
+  base_dir: "logs"
+
+vector_store:
+  default_vector_store:
+    type: lancedb
+    db_uri: output/lancedb
+    container_name: default
+    overwrite: True
+
+### 워크플로 설정 ###
+
+embed_text:
+  model_id: default_embedding_model
+  vector_store_id: default_vector_store
+
+extract_graph:
+  model_id: default_chat_model
+  prompt: "prompts/extract_graph.txt"
+  entity_types: [organization,person,geo,event]
+  max_gleanings: 1
+
+summarize_descriptions:
+  model_id: default_chat_model
+  prompt: "prompts/summarize_descriptions.txt"
+  max_length: 500
+
+extract_graph_nlp:
+  text_analyzer:
+    extractor_type: regex_english # [regex_english, syntactic_parser, cfg]
+
+cluster_graph:
+  max_cluster_size: 10
+
+extract_claims:
+  enabled: false
+  model_id: default_chat_model
+  prompt: "prompts/extract_claims.txt"
+  description: "정보 발견에 관련될 수 있는 모든 주장 또는 사실."
+  max_gleanings: 1
+
+community_reports:
+  model_id: default_chat_model
+  graph_prompt: "prompts/community_report_graph.txt"
+  text_prompt: "prompts/community_report_text.txt"
+  max_length: 2000
+  max_input_length: 8000
+
+embed_graph:
+  enabled: false # true인 경우 노드에 대한 node2vec 임베딩 생성
+
+umap:
+  enabled: false # true인 경우 노드에 대한 UMAP 임베딩 생성 (embed_graph도 활성화되어야 함)
+
+snapshots:
+  graphml: false
+  embeddings: false
+
+### 쿼리 설정 ###
+## 여기서 프롬프트 위치는 필수이며, 각 검색 방법에는 조정할 수 있는 여러 옵션이 있습니다.
+## 구성 문서 참조: https://microsoft.github.io/graphrag/config/yaml/#query
+
+local_search:
+  chat_model_id: default_chat_model
+  embedding_model_id: default_embedding_model
+  prompt: "prompts/local_search_system_prompt.txt"
+
+global_search:
+  chat_model_id: default_chat_model
+  map_prompt: "prompts/global_search_map_system_prompt.txt"
+  reduce_prompt: "prompts/global_search_reduce_system_prompt.txt"
+  knowledge_prompt: "prompts/global_search_knowledge_system_prompt.txt"
+
+drift_search:
+  chat_model_id: default_chat_model
+  embedding_model_id: default_embedding_model
+  prompt: "prompts/drift_search_system_prompt.txt"
+  reduce_prompt: "prompts/drift_search_reduce_prompt.txt"
+
+basic_search:
+  chat_model_id: default_chat_model
+  embedding_model_id: default_embedding_model
+  prompt: "prompts/basic_search_system_prompt.txt"

@@ -1,0 +1,192 @@
+
+-Goal-
+Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
+
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: One of the following types: [agent, memory_store, embedding_function, configuration, component, tool, message, event, termination_condition, subscription, task, model_client, reasoning_model, context, workflow]
+- entity_description: Comprehensive description of the entity's attributes and activities
+Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
+
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+For each pair of related entities, extract the following information:
+- source_entity: name of the source entity, as identified in step 1
+- target_entity: name of the target entity, as identified in step 1
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+- relationship_strength: an integer score between 1 to 10, indicating strength of the relationship between the source entity and target entity
+Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>)
+
+3. Return output in English as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+
+4. If you have to translate into English, just translate the descriptions, nothing else!
+
+5. When finished, output {completion_delimiter}.
+
+-Examples-
+######################
+
+Example 1:
+
+entity_types: [agent, memory_store, embedding_function, configuration, component, tool, message, event, termination_condition, subscription, task, model_client, reasoning_model, context, workflow]
+text:
+, you will need to overload the `add`, `query` and `update_context` methods to implement the desired functionality and pass the memory store to your agent.
+
+Currently the following example memory stores are available as part of the `autogen_ext` extensions package.
+
+- `autogen_ext.memory.chromadb.ChromaDBVectorMemory`: A memory store that uses a vector database to store and retrieve information.
+- `autogen_ext.memory.chromadb.SentenceTransformerEmbeddingFunctionConfig`: A configuration class for the SentenceTransformer embedding function used by the ChromaDBVectorMemory store. Note that other embedding functions such as `autogen_ext.memory.openai.OpenAIEmbeddingFunctionConfig` can also be used with the ChromaDBVectorMemory store.
+
+```python
+import tempfile
+
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.ui import Console
+from autogen_core.memory import MemoryContent, MemoryMimeType
+from autogen_ext.memory.chromadb import (
+    ChromaDBVectorMemory,
+    PersistentChromaDBVectorMemoryConfig,
+    SentenceTransformerEmbeddingFunctionConfig,
+)
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+
+# Use a temporary directory for ChromaDB persistence
+with tempfile.TemporaryDirectory() as tmpdir:
+    chroma_user_memory = ChromaDBVectorMemory(
+        config=PersistentChromaDBVectorMemoryConfig(
+            collection_name="preferences",
+            persistence_path=tmpdir,  # Use the temp directory here
+            k=2,  # Return top k results
+            score_threshold=0.4,  # Minimum similarity score
+            embedding_function_config=SentenceTransformerEmbeddingFunctionConfig(
+                model_name="all-MiniLM-L6-v2"  # Use default model for testing
+            ),
+        )
+    )
+    # Add user preferences to memory
+    await chroma_user_memory.add(
+        MemoryContent(
+            content="The weather should be in metric units",
+            mime_type=MemoryMimeType.TEXT,
+            metadata={{"category": "preferences", "type": "units"}},
+        )
+    )
+
+    await chroma_user_memory.add(
+        MemoryContent(
+            content="Meal recipe must be vegan",
+            mime_type=MemoryMimeType.TEXT,
+            metadata={{"category": "preferences", "type": "dietary"}},
+        )
+    )
+
+    model_client = OpenAIChatCompletionClient(
+        model="gpt-4o",
+    )
+
+    # Create assistant agent with
+------------------------
+output:
+("entity"{tuple_delimiter}ADD{tuple_delimiter}TOOL{tuple_delimiter}The `add` method is used to add content to the memory store, such as user preferences or other data)
+{record_delimiter}
+("entity"{tuple_delimiter}QUERY{tuple_delimiter}TOOL{tuple_delimiter}The `query` method is used to retrieve information from the memory store based on specific criteria or similarity scores)
+{record_delimiter}
+("entity"{tuple_delimiter}UPDATE_CONTEXT{tuple_delimiter}TOOL{tuple_delimiter}The `update_context` method is used to modify or update the context of the memory store to reflect new information or changes)
+{record_delimiter}
+("entity"{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}MEMORY_STORE{tuple_delimiter}A memory store that uses a vector database to store and retrieve information, part of the `autogen_ext` extensions package)
+{record_delimiter}
+("entity"{tuple_delimiter}SENTENCETRANSFORMEREMBEDDINGFUNCTIONCONFIG{tuple_delimiter}CONFIGURATION{tuple_delimiter}A configuration class for the SentenceTransformer embedding function used by the ChromaDBVectorMemory store, specifying the model and its parameters)
+{record_delimiter}
+("entity"{tuple_delimiter}OPENAIEMBEDDINGFUNCTIONCONFIG{tuple_delimiter}CONFIGURATION{tuple_delimiter}An alternative embedding function configuration that can also be used with the ChromaDBVectorMemory store)
+{record_delimiter}
+("entity"{tuple_delimiter}PERSISTENTCHROMADBVECTORMEMORYCONFIG{tuple_delimiter}CONFIGURATION{tuple_delimiter}A configuration class for persistent storage of ChromaDBVectorMemory, including parameters like collection name, persistence path, and similarity thresholds)
+{record_delimiter}
+("entity"{tuple_delimiter}MEMORYCONTENT{tuple_delimiter}COMPONENT{tuple_delimiter}A component representing the content to be stored in memory, including attributes like content, MIME type, and metadata)
+{record_delimiter}
+("entity"{tuple_delimiter}MEMORYMIMETYPE{tuple_delimiter}COMPONENT{tuple_delimiter}A component specifying the MIME type of the memory content, such as TEXT)
+{record_delimiter}
+("entity"{tuple_delimiter}OPENAICHATCOMPLETIONCLIENT{tuple_delimiter}MODEL_CLIENT{tuple_delimiter}A model client for interacting with OpenAI's GPT-4 model, used for generating responses or performing tasks)
+{record_delimiter}
+("entity"{tuple_delimiter}ASSISTANTAGENT{tuple_delimiter}AGENT{tuple_delimiter}An agent created to assist with tasks, leveraging memory stores and model clients for enhanced functionality)
+{record_delimiter}
+("entity"{tuple_delimiter}TEMPFILE{tuple_delimiter}COMPONENT{tuple_delimiter}A component used to create temporary directories for storing persistent memory data during runtime)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}SENTENCETRANSFORMEREMBEDDINGFUNCTIONCONFIG{tuple_delimiter}The ChromaDBVectorMemory store uses the SentenceTransformerEmbeddingFunctionConfig for embedding functions{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}PERSISTENTCHROMADBVECTORMEMORYCONFIG{tuple_delimiter}The ChromaDBVectorMemory store is configured for persistence using PersistentChromaDBVectorMemoryConfig{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}MEMORYCONTENT{tuple_delimiter}The ChromaDBVectorMemory store stores MemoryContent, which includes user preferences and other data{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}MEMORYCONTENT{tuple_delimiter}MEMORYMIMETYPE{tuple_delimiter}MemoryContent specifies its MIME type using MemoryMimeType, such as TEXT{tuple_delimiter}7)
+{record_delimiter}
+("relationship"{tuple_delimiter}ASSISTANTAGENT{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}The AssistantAgent uses the ChromaDBVectorMemory store to manage and retrieve memory{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}ASSISTANTAGENT{tuple_delimiter}OPENAICHATCOMPLETIONCLIENT{tuple_delimiter}The AssistantAgent uses the OpenAIChatCompletionClient for generating responses and performing tasks{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}TEMPFILE{tuple_delimiter}PERSISTENTCHROMADBVECTORMEMORYCONFIG{tuple_delimiter}Tempfile is used to create a temporary directory for the persistence path in PersistentChromaDBVectorMemoryConfig{tuple_delimiter}6)
+{record_delimiter}
+("relationship"{tuple_delimiter}ADD{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}The `add` method is used to add data to the ChromaDBVectorMemory store{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}QUERY{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}The `query` method is used to retrieve data from the ChromaDBVectorMemory store{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}UPDATE_CONTEXT{tuple_delimiter}CHROMADBVECTORMEMORY{tuple_delimiter}The `update_context` method is used to modify the context of the ChromaDBVectorMemory store{tuple_delimiter}7)
+{completion_delimiter}
+#############################
+
+
+Example 2:
+
+entity_types: [agent, memory_store, embedding_function, configuration, component, tool, message, event, termination_condition, subscription, task, model_client, reasoning_model, context, workflow]
+text:
+ on actions *within* the agent itself, and belong to subclasses of the base class `BaseAgentEvent`.
+
+Examples of these include `ToolCallRequestEvent`, which indicates that a request was made to call a tool, and `ToolCallExecutionEvent`, which contains the results of tool calls.
+
+Typically, events are created by the agent itself and are contained in the `inner_messages` field of the `Response` returned from `on_messages`. If you are building a custom agent and have events that you want to communicate to other entities (e.g., a UI), you can include these in the `inner_messages` field of the `Response`. We will show examples of this in Custom Agents.
+
+You can read about the full set of messages supported in AgentChat in the `messages` module.
+
+## Custom Message Types
+
+You can create custom message types by subclassing the base class `BaseChatMessage` or `BaseAgentEvent`. This allows you to define your own message formats and behaviors, tailored to your application. Custom message types are useful when you write custom agents.
+
+------------------------
+output:
+("entity"{tuple_delimiter}BASEAGENTEVENT{tuple_delimiter}event{tuple_delimiter}Base class for events within the agent itself, used to define specific types of agent-related events)
+{record_delimiter}
+("entity"{tuple_delimiter}TOOLCALLREQUESTEVENT{tuple_delimiter}event{tuple_delimiter}An event indicating that a request was made to call a tool)
+{record_delimiter}
+("entity"{tuple_delimiter}TOOLCALLEXECUTIONEVENT{tuple_delimiter}event{tuple_delimiter}An event containing the results of tool calls)
+{record_delimiter}
+("entity"{tuple_delimiter}INNER_MESSAGES{tuple_delimiter}message{tuple_delimiter}Field in the `Response` object that contains events created by the agent itself, such as tool call events)
+{record_delimiter}
+("entity"{tuple_delimiter}RESPONSE{tuple_delimiter}message{tuple_delimiter}Object returned from `on_messages` that contains fields like `inner_messages` to communicate events)
+{record_delimiter}
+("entity"{tuple_delimiter}BASECHATMESSAGE{tuple_delimiter}message{tuple_delimiter}Base class for creating custom message types tailored to specific applications)
+{record_delimiter}
+("entity"{tuple_delimiter}AGENTCHAT{tuple_delimiter}component{tuple_delimiter}Module that supports a full set of messages for agent communication)
+{record_delimiter}
+("entity"{tuple_delimiter}CUSTOM AGENTS{tuple_delimiter}agent{tuple_delimiter}Agents that are built with custom events and message types to communicate with other entities, such as UIs)
+{record_delimiter}
+("relationship"{tuple_delimiter}TOOLCALLREQUESTEVENT{tuple_delimiter}BASEAGENTEVENT{tuple_delimiter}ToolCallRequestEvent is a subclass of BaseAgentEvent, representing a specific type of event{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}TOOLCALLEXECUTIONEVENT{tuple_delimiter}BASEAGENTEVENT{tuple_delimiter}ToolCallExecutionEvent is a subclass of BaseAgentEvent, representing a specific type of event{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}INNER_MESSAGES{tuple_delimiter}RESPONSE{tuple_delimiter}Inner_messages is a field in the Response object that contains events created by the agent{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}CUSTOM AGENTS{tuple_delimiter}INNER_MESSAGES{tuple_delimiter}Custom agents can include events in the inner_messages field to communicate with other entities{tuple_delimiter}7)
+{record_delimiter}
+("relationship"{tuple_delimiter}BASECHATMESSAGE{tuple_delimiter}CUSTOM AGENTS{tuple_delimiter}Custom agents can use BaseChatMessage to define their own message formats and behaviors{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}AGENTCHAT{tuple_delimiter}RESPONSE{tuple_delimiter}AgentChat supports the full set of messages, including those contained in the Response object{tuple_delimiter}6)
+{completion_delimiter}
+#############################
+
+
+
+-Real Data-
+######################
+entity_types: [agent, memory_store, embedding_function, configuration, component, tool, message, event, termination_condition, subscription, task, model_client, reasoning_model, context, workflow]
+text: {input_text}
+######################
+output:
