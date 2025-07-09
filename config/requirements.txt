@@ -1,0 +1,35 @@
+# Azure SQL 및 MagenticOne 시스템 의존성
+
+# 데이터베이스 연결
+pyodbc>=4.0.39
+sqlalchemy>=2.0.0
+sqlalchemy[asyncio]>=2.0.0
+
+# AutoGen 및 AI 에이전트
+autogen-agentchat>=0.2.0
+autogen-ext[azure]>=0.2.0
+
+# Azure 서비스
+azure-search-documents>=11.4.0
+azure-core>=1.29.0
+azure-identity>=1.15.0
+
+# 웹 프레임워크
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# 유틸리티
+python-dotenv>=1.0.0
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# 로깅 및 모니터링
+structlog>=23.2.0
+rich>=13.7.0
+
+# 개발 및 테스트
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.11.0
+flake8>=6.1.0 
