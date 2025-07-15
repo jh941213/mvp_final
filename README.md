@@ -5,7 +5,8 @@
 **KTDS Azure Enterprise Multi-Agent System**은 Microsoft Azure 클라우드 인프라를 기반으로 구축된 차세대 엔터프라이즈 AI 플랫폼입니다. AutoGen 멀티에이전트 아키텍처와 Azure AI 서비스를 통합하여 지능형 업무 자동화와 의사결정 지원을 제공합니다.
 
 ## 🏗️ Azure 클라우드 아키텍처
-<img width="4594" height="4627" alt="제목 없음-2025-06-12-1112 excalidraw" src="https://github.com/user-attachments/assets/c2755db9-2ab3-4b80-bba6-740d8d3b0b3a" />
+<img width="4594" height="4627" alt="as" src="https://github.com/user-attachments/assets/65856837-613f-43a7-8f1a-dc004d937185" />
+
 
 ## 💡 Agent 아키텍처
 
